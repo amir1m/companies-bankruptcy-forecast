@@ -1,0 +1,219 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(dplyr)
+```
+
+
+```{r}
+setwd("~/Projects/companies-bankruptcy-forecast/src")
+```
+
+
+```{r}
+bankruptcy_Train_df <- read.csv('../data/bankruptcy_Train.csv')
+head(bankruptcy_Train_df)
+dim(bankruptcy_Train_df)
+```
+
+
+```{r}
+library(rstanarm)
+library(projpred)
+library(ggplot2)
+library(bayesplot)
+#theme_set(theme_classic())
+options(mc.cores = parallel::detectCores())
+```
+
+```{r}
+
+```
+
+
+```{r}
+nrow(bankruptcy_Train_df)
+ncol(bankruptcy_Train_df)
+```
+
+
+```{r}
+n <- nrow(bankruptcy_Train_df)
+D <- ncol(bankruptcy_Train_df) - 1 # except last "class" column
+```
+
+```{r}
+bankruptcy_train_x <- data.matrix(select(bankruptcy_Train_df, -class))
+bankruptcy_train_x
+```
+
+```{r}
+
+```
+
+
+```{r}
+bankruptcy_train_y <- data.matrix(select(bankruptcy_Train_df, class))
+table(bankruptcy_train_y)
+```
+
+
+
+```{r}
+p0 <- 15 # prior guess for the number of relevant variables
+sigma <- 2 # approximate plug-in value for observation information (Piironen and Vehtari, 2017b)
+tau0 <- p0/(D-p0) * sigma/sqrt(n)
+prior_coeff <- hs(global_scale = tau0, slab_scale = 1)
+```
+
+
+```{r}
+bankruptcy_small <- bankruptcy_data %>% group_by(class) %>% sample_frac(.08)
+```
+
+
+```{r}
+for (i in 1:64) {
+      bankruptcy_small[i] <- scale(bankruptcy_small[i])
+}
+```
+
+
+```{r}
+startTime <- Sys.time()
+t_prior <- student_t(df = 7, location = 0, scale = 2.5)
+fit1 <- stan_glm(bankruptcy_small$class ~ ., family=binomial(link = "logit"), data=bankruptcy_small, prior = t_prior, prior_intercept = t_prior, seed=42, chains=4, iter=1000)
+endTime <- Sys.time()
+cat("\nTotal Time Taken: ", endTime - startTime )
+```
+
+```{r}
+print(fit)
+```
+
+```{r}
+vs <- varsel(fit, method='forward')
+```
+
+```{r}
+vs$vind
+```
+
+```{r}
+varsel_plot(vs, stats=c('elpd', 'acc'), deltas=F)
+```
+
+```{r}
+cvs <- cv_varsel(fit,  method='forward', cv_method='kfold', K=5, seed=42)
+```
+
+```{r}
+cv_varsel(fit = fit, metho)
+```
+
+```{r}
+summary(fit)
+```
+
+```{r}
+plot(fit, plotfun = "trace")
+```
+
+
+```{r}
+# pp_check(fit, plotfun = "stat", stat = "mean")
+# pp_check(fit, plotfun = "dens_overlay")
+```
+
+```{r}
+fit
+```
+
+```{r}
+posterior_interval(fit, prob = 0.95)
+```
+```{r}
+cov2cor(vcov(fit))
+
+```
+
+```{r}
+launch_shinystan(fit, ppd = FALSE)
+```
+
+```{r}
+# Predicted probabilities
+linpred <- posterior_linpred(fit)
+preds <- posterior_linpred(fit, transform=TRUE)
+pred <- colMeans(preds)
+pr <- as.integer(pred >= 0.5)
+   
+
+```
+
+```{r}
+# posterior classification accuracy
+round(mean(xor(pr,as.integer(bankruptcy_train_y==0))),2)
+```
+
+```{r}
+library(loo)
+```
+
+```{r}
+(loo1 <- loo(fit, save_psis = TRUE))
+```
+
+
+```{r}
+# LOO predictive probabilities
+ploo=E_loo(preds, loo1$psis_object, type="mean", log_ratios = -log_lik(fit))$value
+# LOO classification accuracy
+round(mean(xor(ploo>0.5,as.integer(bankruptcy_train_y==0))),2)
+```
+
+```{r}
+# LOO balanced classification accuracy
+round((mean(xor(ploo[bankruptcy_train_y==0]>0.5,as.integer(bankruptcy_train_y[bankruptcy_train_y==0])))+mean(xor(ploo[bankruptcy_train_y==1]<0.5,as.integer(bankruptcy_train_y[bankruptcy_train_y==1]))))/2,2)
+```
+
+
+# Test with test data
+
+```{r}
+bankruptcy_Test_df <- read.csv('../data/bankruptcy_Test_X.csv')
+head(bankruptcy_Test_df)
+dim(bankruptcy_Test_df)
+```
+```{r}
+typeof(bankruptcy_Test_df)
+```
+
+
+```{r}
+bankruptcy_test_x <- select(bankruptcy_Test_df, -ID) # Remove ID column
+bankruptcy_test_x
+```
+
+```{r}
+bankruptcy_Test_df$class <- rep(1, 5000)
+bankruptcy_Test_df
+```
+
+
+```{r}
+bankruptcy_Test_pp$class -> rep(1,10)
+```
+
+```{r}
+lpredict <- posterior_predict(fit)
+```
+
+
+```{r}
+(kfold1 <- kfold(fit, K = 10, cores = 4))
+```
+

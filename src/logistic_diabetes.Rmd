@@ -1,0 +1,85 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+library(caret)
+library(GGally)
+library(ggplot2)
+library(corrplot)
+library(bayesplot)
+theme_set(bayesplot::theme_default(base_family = "sans"))
+library(rstanarm)
+options(mc.cores = parallel::detectCores())
+library(loo)
+library(projpred)
+SEED=14124869
+```
+
+
+```{r}
+# file preview shows a header row
+diabetes <- read.csv("../data/diabetes.csv", header = TRUE)
+
+# first look at the data set using summary() and str() to understand what type of data are you working
+# with
+summary(diabetes)
+```
+
+
+```{r}
+# removing those observation rows with 0 in any of the variables
+for (i in 2:6) {
+      diabetes <- diabetes[-which(diabetes[, i] == 0), ]
+}
+# scale the covariates for easier comparison of coefficient posteriors
+for (i in 1:8) {
+      diabetes[i] <- scale(diabetes[i])
+}
+
+# modify the data column names slightly for easier typing
+names(diabetes)[7] <- "dpf"
+names(diabetes) <- tolower(names(diabetes))
+
+n=dim(diabetes)[1]
+p=dim(diabetes)[2]
+str(diabetes)
+```
+
+
+```{r}
+print(paste0("number of observations = ", n))
+```
+
+
+```{r}
+print(paste0("number of predictors = ", p))
+```
+
+
+```{r}
+diabetes$outcome <- factor(diabetes$outcome)
+# preparing the inputs
+x <- model.matrix(outcome ~ . - 1, data = diabetes)
+y <- diabetes$outcome
+```
+
+
+```{r}
+t_prior <- student_t(df = 7, location = 0, scale = 2.5)
+post1 <- stan_glm(outcome ~ ., data = diabetes,
+                 family = binomial(link = "logit"), 
+                 prior = t_prior, prior_intercept = t_prior, QR=TRUE,
+                 seed = SEED)
+```
+
+```{r}
+data("womensrole", package = "HSAUR3")
+```
+
+```{r}
+womensrole$disagree
+```
+
