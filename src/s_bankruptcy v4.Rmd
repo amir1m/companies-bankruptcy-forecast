@@ -24,7 +24,7 @@ head(bankruptcy_data)
 ```
 
 ```{r}
-summary(bankruptcy_data)
+#summary(bankruptcy_data)
 ```
 
 
@@ -60,15 +60,6 @@ for (i in 1:64) {
 
 ```{r}
 dim(bankruptcy_data)
-```
-
-```{r}
-bankruptcy_data
-```
-
-
-```{r}
-str(bankruptcy_data)
 ```
 
 ## Make "class" to be factor type and create x and y variables
@@ -192,5 +183,89 @@ pp_check(post1, "dens_overlay")
 ```
 ```{r}
 pp_check(post1, "stat")
+```
+
+# Test!!!!
+
+```{r}
+dim(bankruptcy_test)
+```
+
+```{r}
+table(bankruptcy_test$class)
+```
+
+```{r}
+str(bankruptcy_test)
+```
+
+
+```{r}
+bankruptcy_test <- ungroup(bankruptcy_test)
+dim(bankruptcy_test)
+
+bankruptcy_test_x <- select(bankruptcy_test, -class)
+dim(bankruptcy_test_x)
+
+
+```
+
+
+```{r}
+posterior <- posterior_predict(post1, newdata = bankruptcy_test_x)
+
+```
+
+```{r}
+dim(posterior)
+```
+
+```{r}
+hist(posterior)
+```
+
+```{r}
+bankruptcy_test$class
+```
+
+
+```{r}
+j <- filter(bankruptcy_test, class==1)
+dim(j)
+```
+
+```{r}
+pred <- colMeans(posterior)
+pr <- as.integer(pred >= 0.5)
+```
+
+```{r}
+table(pr)
+```
+
+```{r}
+true_pr <- bankruptcy_test$class
+table(true_pr)
+```
+
+
+```{r}
+table(true_pr, pr)
+```
+
+```{r}
+library(MLmetrics)
+```
+
+```{r}
+ConfusionMatrix(pr, true_pr)
+```
+
+```{r}
+Precision(true_pr, pr)
+```
+
+```{r}
+Recall(true_pr, pr)
 ```
 
