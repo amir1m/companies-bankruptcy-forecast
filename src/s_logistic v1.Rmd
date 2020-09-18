@@ -51,4 +51,32 @@ true_pr <- test_data$class
 table(true_pr, predicted_scaled)
 ```
 
+## Stepwise variable selection
+
+```{r}
+library(MASS)
+step.model <- logitMod %>% stepAIC(trace = FALSE)
+coef(step.model)
+```
+
+```{r}
+coef(step.model)
+```
+
+
+```{r}
+predicted_step <- predict(step.model, test_data, type="response")
+```
+
+```{r}
+predicted_step_scaled <- as.integer(predicted_step>= 0.5)
+table(predicted_step_scaled)
+```
+```{r}
+table(true_pr, predicted_step_scaled)
+```
+
+```{r}
+
+```
 

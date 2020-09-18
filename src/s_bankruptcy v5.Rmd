@@ -192,9 +192,12 @@ post1 <- stan_glm(class ~ . , data = bankruptcy_train,
 ```{r}
 summary(post1)
 ```
+```{r}
+prior_summary(post1)
+```
 
 
-# PPC
+## PPC
 
 ```{r}
 pp_check(post1, "dens_overlay")
@@ -203,7 +206,7 @@ pp_check(post1, "dens_overlay")
 pp_check(post1, "stat")
 ```
 
-# Test!!!!
+## Test!!!!
 
 
 ```{r}
@@ -356,4 +359,15 @@ mcmc_hist(data.frame(bayesR2), binwidth=0.02) + pxl +
     geom_vline(xintercept=median(bayesR2))
 ```
 
+
+
+
+## Variable Selection
+```{r}
+vs_post1$vind
+```
+
+```{r}
+varsel_plot(vs_post1, stats=c('elpd', 'acc'), deltas=F)
+```
 
