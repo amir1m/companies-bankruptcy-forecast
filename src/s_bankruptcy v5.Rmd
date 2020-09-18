@@ -291,7 +291,7 @@ Precision(true_pr, pr)
 Recall(true_pr, pr)
 ```
 
-#Store Train and Test Dataframes for future model comparison
+#Store Model, Train and Test Dataframes for future model comparison
 ```{r}
 dim(bankruptcy_train)
 ```
@@ -307,5 +307,25 @@ dim(bankruptcy_test)
 
 ```{r}
 write.csv(bankruptcy_test, "../data/bankruptcy_test_am.csv")
+```
+
+```{r}
+#post1@stanmodel@dso <- new("cxxdso") ## Didn't work
+saveRDS(post1, file = "../model/post1.rds")
+```
+
+```{r}
+lpost1 <- readRDS("../model/post1.rds")
+```
+
+```{r}
+summary(lpost1)
+```
+```{r}
+loo(lpost1)
+```
+
+```{r}
+loo(post1)
 ```
 
