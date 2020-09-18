@@ -1,0 +1,54 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(dplyr)
+set.seed(42)
+```
+
+
+```{r}
+training_data <- select(read_csv('../data/bankruptcy_train_am.csv'), -X1)
+test_data <- select(read_csv('../data/bankruptcy_test_am.csv'), -X1)
+```
+
+```{r}
+head(training_data)
+```
+```{r}
+head(test_data)
+```
+
+```{r}
+inner_join(training_data, test_data)
+```
+
+```{r}
+logitMod <- glm(class ~ ., data=training_data, family=binomial(link="logit"))
+
+```
+
+```{r}
+predicted <- predict(logitMod, test_data, type="response")
+```
+
+```{r}
+length(predicted)
+```
+
+```{r}
+predicted_scaled <- as.integer(predicted >= 0.5)
+```
+
+```{r}
+table(predicted_scaled)
+```
+
+```{r}
+true_pr <- test_data$class
+table(true_pr, predicted_scaled)
+```
+
+

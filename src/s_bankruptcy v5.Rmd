@@ -291,7 +291,7 @@ Precision(true_pr, pr)
 Recall(true_pr, pr)
 ```
 
-#Store Model, Train and Test Dataframes for future model comparison
+## Store Model, Train and Test Dataframes for future model comparison
 ```{r}
 dim(bankruptcy_train)
 ```
@@ -328,4 +328,32 @@ loo(lpost1)
 ```{r}
 loo(post1)
 ```
+
+## RSquared (https://avehtari.github.io/ROS-Examples/Rsquared/rsquared.html#Toy_logistic_regression_example,_n=20)
+
+```{r}
+bayes_R2 <- function(fit) {
+  mupred <- rstanarm::posterior_linpred(fit, transform = TRUE)
+  var_mupred <- apply(mupred, 1, var)
+  if (family(fit)$family == "binomial" && NCOL(y) == 1) {
+      sigma2 <- apply(mupred*(1-mupred), 1, mean)
+  } else {
+      sigma2 <- as.matrix(fit, pars = c("sigma"))^2
+  }
+  var_mupred / (var_mupred + sigma2)
+}
+```
+
+```{r}
+round(median(bayesR2<-bayes_R2(post1)), 2)
+```
+
+```{r}
+pxl<-xlim(0,1)
+mcmc_hist(data.frame(bayesR2), binwidth=0.02) + pxl +
+    scale_y_continuous(breaks=NULL) +
+    xlab('Bayesian R2') +
+    geom_vline(xintercept=median(bayesR2))
+```
+
 
