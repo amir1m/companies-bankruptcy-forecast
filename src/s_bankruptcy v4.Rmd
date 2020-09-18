@@ -81,7 +81,6 @@ head(bankruptcy_data)
 
 ```{r}
 bankruptcy_small <- bankruptcy_data %>% group_by(class) %>% sample_frac(.08)
-str(bankruptcy_small)
 ```
 
 
