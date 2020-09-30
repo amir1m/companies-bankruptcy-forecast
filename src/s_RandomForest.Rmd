@@ -1,0 +1,76 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(dplyr)
+library(tidyverse)
+library(statisticalModeling)
+library(permute)
+library(randomForest)
+set.seed(42)
+```
+
+
+```{r}
+training_data <- select(read_csv('../data/bankruptcy_train_am.csv'), -X1)
+test_data <- select(read_csv('../data/bankruptcy_test_am.csv'), -X1)
+```
+
+```{r}
+head(training_data)
+```
+```{r}
+head(test_data)
+```
+
+
+### Pre-process - factor and scale data
+
+
+
+```{r}
+training_data$class <- factor(training_data$class, levels = c(0,1))
+test_data$class <- factor(test_data$class, levels = c(0,1))
+```
+
+
+```{r}
+head(training_data)
+head(test_data)
+```
+
+## Build Random Forest
+
+```{r}
+model_rf <- randomForest(class ~ ., data=training_data)
+```
+
+
+```{r}
+model_rf
+```
+
+
+```{r}
+varImpPlot(model_rf)
+```
+
+In-sample
+```{r}
+model_rf_output<-evaluate_model(model_rf, data=training_data, type='class')
+cat("Confusion Matrix: ") 
+table(model_rf_output$class, model_rf_output$model_output)
+cat("\n Accuracy: ", with(data = model_rf_output, mean(class != model_output, na.rm = TRUE)))
+```
+
+Test
+```{r}
+model_rf_output_test<-evaluate_model(model_rf, data=test_data, type='class')
+cat("Confusion Matrix: ") 
+table(model_rf_output_test$class, model_rf_output_test$model_output)
+cat("\n Accuracy: ", with(data = model_rf_output_test, mean(class != model_output, na.rm = TRUE)))
+
+```
+

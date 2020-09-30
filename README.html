@@ -383,16 +383,34 @@ summary {
 <div id="todo-list-plan" class="section level2">
 <h2>Todo list / Plan</h2>
 <ul>
-<li><p>[] Fit Bayesain regression with all variables, Student-t prior and defaults</p>
-<ul class="task-list">
+<li><p><input type="checkbox" disabled></input>
+Fit Bayesain regression with all variables : Student-t prior and defaults</p><ul class="task-list">
 <li><input type="checkbox" disabled checked></input>
 [Use Bayes Rqaured metric] (<a href="https://avehtari.github.io/ROS-Examples/Rsquared/rsquared.html" class="uri">https://avehtari.github.io/ROS-Examples/Rsquared/rsquared.html</a>) to test the goodness fit</li>
+<li><input type="checkbox" disabled></input>
+Change the variables</li>
 </ul></li>
-<li><p>[x ] Run plain logistic regression</p></li>
+<li><p>[x ] Run plain logistic regression</p>
+<ul class="task-list">
+<li><input type="checkbox" disabled></input>
+Do causal inference</li>
+</ul></li>
 <li><p><input type="checkbox" disabled></input>
 Run Bayesian regression with bayesian variable selected covariates/predictors</p></li>
 <li><p><input type="checkbox" disabled></input>
 Run Bayesian regression with covariates/predictors suggested by expert</p></li>
+</ul>
+</div>
+<div id="ideas" class="section level2">
+<h2>Ideas:</h2>
+<ul>
+<li>Combine Bayesian Coresets ( to reduce ‘n’) with projpred (to reduce ‘p’)
+<ul>
+<li>Generate Bayesian coresets</li>
+<li>Do Bayesian variable selection using projpred from reduced Bayeisan Coresets</li>
+<li>Run GLM on reduced n and reduced p</li>
+<li>Generate minimum error bound!!</li>
+</ul></li>
 </ul>
 </div>
 </div>

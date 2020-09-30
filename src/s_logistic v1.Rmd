@@ -5,6 +5,7 @@ output: html_notebook
 
 ```{r}
 library(dplyr)
+library(tidyverse)
 set.seed(42)
 ```
 
@@ -51,32 +52,53 @@ true_pr <- test_data$class
 table(true_pr, predicted_scaled)
 ```
 
-## Stepwise variable selection
+## Hypothesis testing
+```{r}
+summary(logitMod)
+```
+
+### Store the model
+```{r}
+write_rds(logitMod, path = "../model/logisticModel.rds")
+```
+
 
 ```{r}
-library(MASS)
-step.model <- logitMod %>% stepAIC(trace = FALSE)
-coef(step.model)
+rm(logitMod)
+```
+
+
+```{r}
+summary(logitMod)
+```
+
+
+```{r}
+logitMod <- read_rds("../model/logisticModel.rds")
 ```
 
 ```{r}
-coef(step.model)
+summary(logitMod)
+```
+
+
+### To get the significance for the overall model we use the following command:
+https://sphweb.bumc.bu.edu/otlt/MPH-Modules/BS/R/R7_LogisticRegression-Survival/R7_LogisticRegression-Survival3.html
+
+```{r}
+1-pchisq(1105.8-10308.5, 5599-5536)
+```
+
+```{r}
+summary(logitMod)
 ```
 
 
 ```{r}
-predicted_step <- predict(step.model, test_data, type="response")
+library(report)
 ```
 
 ```{r}
-predicted_step_scaled <- as.integer(predicted_step>= 0.5)
-table(predicted_step_scaled)
-```
-```{r}
-table(true_pr, predicted_step_scaled)
-```
-
-```{r}
-
+report(logitMod)
 ```
 

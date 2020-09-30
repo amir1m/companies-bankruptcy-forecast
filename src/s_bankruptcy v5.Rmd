@@ -371,3 +371,6 @@ vs_post1$vind
 varsel_plot(vs_post1, stats=c('elpd', 'acc'), deltas=F)
 ```
 
+
+
+

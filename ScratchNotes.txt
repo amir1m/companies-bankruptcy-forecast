@@ -1,0 +1,42 @@
+
+FULL DATASET
+   y_pred
+y_true    0    1
+     0 2093   12
+     1   46    1
+
+LOGISTIC WITH FULL DATASET
+    predicted_scaled
+true_pr    0    1
+      0 2088   17
+      1   41    6
+
+CORE DATASET
+ y_pred
+y_true    0    1
+     0 2093   12
+     1   46    1
+
+
+Expert Model:
+      0    1
+  0 2095   10
+  1   43    4
+  
+Random Forest All Features:
+Confusion Matrix: 
+   
+       0    1
+  0 2104    1
+  1   46    1
+
+ Accuracy:  0.02184015
+ 
+ ----
+ stan_glm : 
+ Confusion Matrix:    model_expert_output_test
+       0    1
+  0 2087   18
+  1   39    8
+
+ Accuracy:  0.973513

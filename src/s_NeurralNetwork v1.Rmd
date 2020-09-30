@@ -1,0 +1,81 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(dplyr)
+library(tidyverse)
+set.seed(42)
+```
+
+
+```{r}
+training_data <- select(read_csv('../data/bankruptcy_train_am.csv'), -X1)
+test_data <- select(read_csv('../data/bankruptcy_test_am.csv'), -X1)
+```
+
+```{r}
+head(training_data)
+```
+```{r}
+head(test_data)
+```
+
+
+### Pre-process - factor and scale data
+
+
+
+
+```{r}
+normalize <- function(x) {
+  return ((x - min(x)) / (max(x) - min(x)))
+}
+```
+
+
+```{r}
+training_data_pp <- as.data.frame(lapply(training_data, normalize))
+test_data_pp <- as.data.frame(lapply(test_data, normalize))
+
+```
+
+
+
+
+## Neural Network Classifier
+```{r}
+library('neuralnet')
+```
+
+```{r}
+nn <- neuralnet(class ~ ., data=training_data_pp, hidden=c(256,128.64,32,16), linear.output=FALSE, threshold=0.01)
+nn$result.matrix
+plot(nn)
+
+```
+
+```{r}
+nn.results <- compute(nn, test_data_pp)
+results <- data.frame(actual = test_data_pp$class, prediction = nn.results$net.result)
+results
+```
+
+```{r}
+roundedresults<-sapply(results,round,digits=0)
+roundedresultsdf=data.frame(roundedresults)
+attach(roundedresultsdf)
+table(actual,prediction)
+```
+
+### Store NN
+```{r}
+write_rds(nn, path = "../model/neural_network.rds")
+```
+
+
+```{r}
+nn$call
+```
+
