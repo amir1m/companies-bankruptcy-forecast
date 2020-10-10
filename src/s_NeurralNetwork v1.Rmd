@@ -71,7 +71,7 @@ table(actual,prediction)
 
 ### Store NN
 ```{r}
-write_rds(nn, path = "../model/neural_network.rds")
+#write_rds(nn, path = "../model/neural_network.rds")
 ```
 
 

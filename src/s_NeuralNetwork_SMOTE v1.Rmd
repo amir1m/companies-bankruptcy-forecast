@@ -1,0 +1,198 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+```{r}
+library(tidyverse)
+library(caret)
+library(GGally)
+library(ggplot2)
+library(corrplot)
+library(bayesplot)
+theme_set(bayesplot::theme_default(base_family = "sans"))
+library(rstanarm)
+options(mc.cores = parallel::detectCores())
+library(loo)
+library(projpred)
+
+library(bayestestR)
+library("report")
+library("see")
+library("parameters")
+
+library("statisticalModeling")
+
+library(MLmetrics)
+
+library(DMwR)
+SEED=42
+set.seed(42)
+```
+
+
+```{r}
+training_data <- as.data.frame(select(read_csv('../data/bankruptcy_train_am.csv'), -X1))
+test_data <- select(read_csv('../data/bankruptcy_test_am.csv'), -X1)
+```
+
+
+### Apply SMOTE AND Pre-process - factor and normalize data
+
+```{r}
+training_data$class <- factor(training_data$class, levels = c(0,1))
+test_data$class <- factor(test_data$class, levels = c(0,1))
+```
+
+```{r}
+table(training_data$class)
+```
+
+
+```{r}
+training_data_smt <- SMOTE(class ~ ., training_data, perc.over = 400, perc.under = 200)
+table(training_data_smt$class)
+```
+
+
+```{r}
+for (i in 1:64) {
+      training_data_smt[i] <- scale(training_data_smt[i], center = TRUE, scale = TRUE)
+      test_data[i] <- scale(test_data[i], center = TRUE, scale = TRUE)
+}
+```
+
+
+```{r}
+head(training_data_smt)
+```
+
+```{r}
+dim(test_data)
+```
+
+
+```{r}
+table(training_data_smt$class)
+```
+
+
+## Build DNN with 3 layers
+
+```{r}
+library('neuralnet')
+```
+
+```{r}
+
+nn <- neuralnet(class~. ,data=training_data, hidden=3,act.fct = "logistic",linear.output = FALSE)
+
+```
+
+```{r}
+plot(nn)
+```
+
+
+```{r}
+Predict=compute(nn,test_data)
+Predict$net.result
+```
+
+```{r}
+# Converting probabilities into binary classes setting threshold level 0.5
+prob <- Predict$net.result
+pred <- ifelse(prob>0.5, 1, 0)
+pred
+```
+
+```{r}
+table(test_data$class, pred)
+```
+
+```{r}
+MLmetrics::Precision(test_data$class, pred)
+MLmetrics::Recall(test_data$class, pred)
+MLmetrics::F1_Score(test_data$class, pred)
+MLmetrics::Area_Under_Curve(test_data$class, pred)
+```
+
+
+## DNN with 4 layers
+
+
+```{r}
+
+nn4 <- neuralnet(class~. ,data=training_data, hidden=4,act.fct = "logistic",linear.output = FALSE)
+
+```
+
+```{r}
+plot(nn4)
+```
+
+```{r}
+Predict4=compute(nn4,test_data)
+Predict4$net.result
+```
+
+```{r}
+# Converting probabilities into binary classes setting threshold level 0.5
+prob4 <- Predict4$net.result
+pred4 <- ifelse(prob4>0.5, 1, 0)
+pred4
+```
+
+```{r}
+table(test_data$class, pred4)
+```
+
+```{r}
+MLmetrics::Precision(test_data$class, pred4)
+MLmetrics::Recall(test_data$class, pred4)
+MLmetrics::F1_Score(test_data$class, pred4)
+MLmetrics::Area_Under_Curve(test_data$class, pred4)
+
+```
+
+
+## DNN with 3 layers but EXPERT features
+```{r}
+nn_expert <- neuralnet(class ~ Attr8 + Attr10 + Attr12 + Attr20 + Attr33 + Attr40 + Attr42 + Attr46 + Attr49 + Attr59 + Attr63 + Attr64 ,data=training_data, hidden=3,act.fct = "logistic",linear.output = FALSE)
+
+```
+
+```{r}
+plot(nn_expert)
+```
+
+
+
+```{r}
+Predict_expert=compute(nn_expert,test_data)
+Predict_expert$net.result
+```
+
+```{r}
+# Converting probabilities into binary classes setting threshold level 0.5
+prob_expert <- Predict_expert$net.result
+pred_expert <- ifelse(prob_expert>0.5, 1, 0)
+```
+
+```{r}
+table(test_data$class, pred_expert)
+```
+
+
+
+```{r}
+MLmetrics::Precision(test_data$class, pred_expert)
+MLmetrics::Recall(test_data$class, pred_expert)
+MLmetrics::F1_Score(test_data$class, pred_expert)
+MLmetrics::Area_Under_Curve(test_data$class, pred_expert)
+```
+
+
+
+

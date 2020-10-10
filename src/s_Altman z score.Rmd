@@ -1,0 +1,211 @@
+---
+title: "Altman Z Score"
+output: html_notebook
+---
+
+## Altman Z Score
+X1 = working capital / total assets
+X2 = retained earnings / total assets
+X3 = earnings before interest and taxes / total assets
+X4 = market value of equity / total liabilities
+X5 = sales / total assets
+Z-score bankruptcy model:
+
+//Z = 0.012X1 + 0.014X2 + 0.033X3 + 0.006X4 + 0.999X5
+//X1,X2,X3,X4 are in percentage points
+Z = 1.2X1 + 1.4X2 + 3.3X3 + 0.6X4 + X5
+Zones of discrimination:
+
+Z > 2.99 – "safe" zone
+1.81 < Z < 2.99 – "grey" zone
+Z < 1.81 – "distress" zone
+
+
+
+
+```{r}
+library(tidyverse)
+library(caret)
+library(GGally)
+library(ggplot2)
+library(corrplot)
+library(bayesplot)
+theme_set(bayesplot::theme_default(base_family = "sans"))
+library(rstanarm)
+options(mc.cores = parallel::detectCores())
+library(loo)
+library(projpred)
+
+library(bayestestR)
+library("report")
+
+library(MLmetrics)
+SEED=42
+set.seed(42)
+```
+
+
+```{r}
+training_data <- select(read_csv('../data/bankruptcy_train_am.csv'), -X1)
+test_data <- select(read_csv('../data/bankruptcy_test_am.csv'), -X1)
+```
+
+
+### Pre-process - factor and normalize data
+
+```{r}
+training_data$class <- factor(training_data$class, levels = c(0,1))
+test_data$class <- factor(test_data$class, levels = c(0,1))
+```
+
+```{r}
+for (i in 1:64) {
+      training_data[i] <- scale(training_data[i], center = TRUE, scale = TRUE)
+      test_data[i] <- scale(test_data[i], center = TRUE, scale = TRUE)
+}
+```
+
+
+```{r}
+table(training_data$class)
+```
+
+```{r}
+table(test_data$class)
+```
+
+
+```{r}
+dim(test_data)
+```
+
+
+```{r}
+table(training_data$class)
+```
+
+```{r}
+head(training_data)
+```
+
+
+## Altman Z-score Function
+
+```{r}
+altman_score <- function(ldata){
+  X1 <- select(ldata, Attr3)
+  X2 <- select(ldata, Attr6)
+  X3 <- select(ldata, Attr7)
+  X4 <- select(ldata, Attr8)
+  X5 <- select(ldata, Attr9)
+  z_score <- 1.2 * X1 + 1.4 * X2 + 3.3 * X3 + 0.6 * X4 + X5
+  #z_score <- 0.012 * X1 + 0.014 * X2 + 0.033 * X3 + 0.006 * X4 + 0.999 * X5
+  return(z_score)
+}
+```
+
+## Predictive performance
+
+### In-sample Validation
+
+```{r}
+zscore_train <- altman_score(training_data)
+
+altman_predictions_train <- ifelse(zscore_train>2.99, 0, 1) # TODO Grey Zone
+
+table(training_data$class, altman_predictions_train)
+Accuracy(y_pred = altman_predictions_train, y_true = training_data$class)
+```
+
+
+### Test 
+
+```{r}
+zscore_test <- altman_score(test_data)
+
+altman_predictions_test <- ifelse(zscore_test > 2.99, 0, 1) # TODO Grey Zone
+
+table(test_data$class, altman_predictions_test)
+Accuracy(y_pred = altman_predictions_test, y_true = test_data$class)
+
+```
+
+
+## Use Altman variables Bayesian Way!
+
+```{r}
+t_prior <- student_t(df = 7, location = 0, scale = 2.5)
+
+model_altman <- stan_glm(class ~ Attr3 + Attr6 + Attr7 + Attr8 + Attr9,
+                 family = binomial(link = "logit"), data = training_data,
+                 prior = t_prior, prior_intercept = t_prior, QR=TRUE,cores=4,
+                 seed = 42)
+```
+```{r}
+summary(model_altman)
+```
+
+
+```{r}
+report(model_altman)
+```
+
+
+```{r}
+describe_posterior(model_altman)
+```
+```{r}
+pplot<-plot(model_altman, "areas", prob = 0.95, prob_outer = 1)
+pplot+ geom_vline(xintercept = 0)
+```
+## Predictive performance - Altman Bayesian
+
+```{r}
+# Predicted probabilities
+linpred_altman <- posterior_linpred(model_altman)
+preds_altman <- posterior_linpred(model_altman, transform=TRUE)
+pred_altman <- colMeans(preds_altman)
+pr_altman <- as.integer(pred_altman >= 0.5)
+   
+# posterior classification accuracy
+round(mean(xor(pr_altman,as.integer(training_data$class==0))),2)
+```
+### In-sample Validation Altman Bayesian
+
+```{r}
+preds_insample_altman <- posterior_linpred(model_altman, transform=TRUE)
+pred_insample_altman <- colMeans(preds_altman)
+```
+
+```{r}
+pr_insample_altman <- as.integer(pred_insample_altman >= 0.5)
+   
+# posterior classification accuracy
+round(mean(xor(pr_insample_altman,as.integer(training_data$class==0))),2)
+
+table(training_data$class, pr_insample_altman)
+```
+
+### Test - Altman Bayesian
+```{r}
+preds_altman_test <- posterior_predict(model_altman, newdata = test_data)
+pred_altman_test <- colMeans(preds_altman_test)
+```
+
+
+```{r}
+pr_altman_test <- as.integer(pred_altman_test >= 0.5)
+   
+# posterior classification accuracy
+round(mean(xor(pr_altman_test,as.integer(test_data$class==0))),3)
+
+table(test_data$class, pr_altman_test)
+```
+
+```{r}
+```
+
+
+```{r}
+```
+

@@ -1,0 +1,606 @@
+---
+title: "R Notebook"
+output: html_notebook
+pdf_document:
+    keep_tex: true
+---
+
+```{r}
+library(tidyverse)
+library(caret)
+library(GGally)
+library(ggplot2)
+library(corrplot)
+library(bayesplot)
+theme_set(bayesplot::theme_default(base_family = "sans"))
+library(rstanarm)
+options(mc.cores = parallel::detectCores())
+library(loo)
+library(projpred)
+
+library(bayestestR)
+library("report")
+library("see")
+library("parameters")
+
+library("statisticalModeling")
+SEED=42
+set.seed(42)
+```
+
+
+```{r}
+training_data <- select(read_csv('../data/bankruptcy_train_am.csv'), -X1)
+test_data <- select(read_csv('../data/bankruptcy_test_am.csv'), -X1)
+```
+
+
+### Pre-process - factor and normalize data
+
+```{r}
+training_data$class <- factor(training_data$class, levels = c(0,1))
+test_data$class <- factor(test_data$class, levels = c(0,1))
+```
+
+```{r}
+for (i in 1:64) {
+      training_data[i] <- scale(training_data[i], center = TRUE, scale = TRUE)
+      test_data[i] <- scale(test_data[i], center = TRUE, scale = TRUE)
+}
+```
+
+
+```{r}
+head(training_data)
+```
+```{r}
+dim(test_data)
+```
+
+
+```{r}
+table(training_data$class)
+```
+
+
+
+## Build rstanarm model with selected variables RPART
+
+```{r}
+t_prior <- student_t(df = 7, location = 0, scale = 2.5)
+
+model_bayes_1 <- stan_glm(class ~ Attr24 + Attr25 + Attr26 + Attr34 + Attr5 + Attr46,
+                 family = binomial(link = "logit"), data = training_data,
+                 prior = t_prior, prior_intercept = t_prior, QR=TRUE,cores=4,
+                 seed = 42)
+
+```
+
+
+```{r}
+summary(model_bayes_1)
+```
+
+```{r}
+describe_posterior(model_bayes_1)
+```
+
+
+## REPORT
+
+```{r}
+report(model = model_bayes_1)
+```
+
+
+```{r}
+pplot<-plot(model_bayes_1, "areas", prob = 0.95, prob_outer = 1)
+pplot+ geom_vline(xintercept = 0)
+```
+
+
+## Expert Model
+```{r}
+model_expert <- stan_glm(class ~ Attr8 + Attr10 + Attr12 + Attr20 + Attr33 + Attr40 + Attr42 + Attr46 + Attr49 + Attr59 + Attr63 + Attr64, family = binomial(link = "logit"), data = training_data,
+                 prior = t_prior, prior_intercept = t_prior, QR=TRUE,cores=4,
+                 seed = 42) 
+       
+```
+
+### Save Bayesian Expert Model
+```{r}
+#write_rds(model_expert, "../model/model_expert.rds")
+
+```
+```{r}
+```
+
+
+```{r}
+summary(model_expert)
+```
+
+
+```{r}
+report(model_expert)
+```
+
+
+```{r}
+describe_posterior(model_expert)
+```
+
+```{r}
+equivalence_test(model_expert)
+```
+```{r}
+p_direction(model_expert)
+```
+
+
+## SEE Visualization
+
+```{r}
+result_pd <- p_direction(model_expert)
+```
+
+```{r}
+print(result_pd)
+```
+```{r}
+plot(result_pd)
+```
+
+
+```{r}
+result <- estimate_density(model_expert)
+```
+
+```{r}
+plot(result)
+```
+```{r}
+plot(result, stack = FALSE)
+```
+
+```{r}
+plot(result, stack = FALSE, priors = TRUE)
+```
+
+
+```{r}
+result <- p_direction(model_expert, effects = "all", component = "all")
+result
+```
+
+
+```{r}
+plot(result, n_columns=NULL)
+```
+
+```{r}
+result <- p_significance(model_expert, effects = "all", component = "all")
+```
+
+```{r}
+plot(result)
+```
+
+### Point estimates
+```{r}
+result <- point_estimate(model_expert)
+plot(result)
+```
+```{r}
+result <- equivalence_test(model_expert)
+```
+
+
+```{r}
+plot(result) +
+  theme_blackboard() +
+  scale_fill_material()
+```
+
+
+
+```{r}
+result <- model_parameters(model_expert,  effects = "all", component = "all")
+
+plot(result)
+```
+
+
+```{r}
+corrplot(training_data)
+```
+
+
+
+```{r}
+
+pplot<-plot(model_expert, "areas", prob = 0.95, prob_outer = 1)
+pplot+ geom_vline(xintercept = 0)
+```
+
+## Compare Models
+```{r}
+loo_bayes_1 <- loo(model_bayes_1)
+```
+
+
+```{r}
+lkfold_bayes_1 <- kfold(model_bayes_1, K = 10)
+```
+
+```{r}
+lkfold_expert <- kfold(model_expert, K = 10)
+```
+
+```{r}
+loo_compare(lkfold_bayes_1, lkfold_expert)
+```
+
+```{r}
+loo_compare(lkfold_expert, lkfold_bayes_1)
+```
+
+Interpretation:https://mc-stan.org/rstanarm/articles/binomial.html
+These results favor model_expert over model_bayes_1, as the estimated difference in elpd (the expected log pointwise predictive density for a new dataset) is so much larger than its standard error. LOO penalizes models for adding additional predictors (this helps counter overfitting).
+
+Overall : https://avehtari.github.io/modelselection/diabetes.html
+
+
+
+```{r}
+lkfold_expert
+```
+
+
+```{r}
+lkfold_bayes_1
+kfol
+```
+
+
+```{r}
+```
+
+
+## Prior Summary
+```{r}
+prior_summary(model_bayes_1)
+```
+```{r}
+round(posterior_interval(model_bayes_1, prob = 0.9), 2)
+```
+
+## Predictive performance
+
+```{r}
+# Predicted probabilities
+linpred <- posterior_linpred(model_bayes_1)
+preds <- posterior_linpred(model_bayes_1, transform=TRUE)
+pred <- colMeans(preds)
+pr <- as.integer(pred >= 0.5)
+   
+# posterior classification accuracy
+round(mean(xor(pr,as.integer(training_data$class==0))),2)
+
+```
+
+
+```{r}
+# posterior balanced classification accuracy
+round((mean(xor(pr[training_data$class==0]>0.5,as.integer(training_data$class[training_data$class==0])))+mean(xor(pr[training_data$class==1]<0.5,as.integer(training_data$class[training_data$class==1]))))/2,2)
+```
+
+## Test
+
+### In-sample Validation Bayesian - rpart
+
+```{r}
+preds_insample_1 <- posterior_linpred(model_bayes_1, transform=TRUE)
+pred_insample_1 <- colMeans(preds_insample_1)
+```
+
+```{r}
+pr_insample_1 <- as.integer(pred_insample_1 >= 0.09)
+   
+# posterior classification accuracy
+round(mean(xor(pr_insample_1,as.integer(training_data$class==0))),2)
+
+table(training_data$class, pr_insample_1)
+```
+
+
+```{r}
+```
+
+### Test - Bayesian - rpart
+```{r}
+preds_test_1 <- posterior_predict(model_bayes_1, newdata = test_data)
+pred_test_1 <- colMeans(preds_test_1)
+```
+
+
+```{r}
+pr_test_1 <- as.integer(pred_test_1 >= 0.5)
+   
+# posterior classification accuracy
+round(mean(xor(pr_test_1,as.integer(test_data$class==0))),2)
+
+table(test_data$class, pr_test_1)
+```
+
+### In-sample Validation Bayesian - EXPERT
+
+```{r}
+preds_insample <- posterior_linpred(model_expert, transform=TRUE)
+pred_insample <- colMeans(preds_insample)
+```
+
+```{r}
+pr_insample <- as.integer(pred_insample >= 0.1)
+   
+# posterior classification accuracy
+round(mean(xor(pr_insample,as.integer(training_data$class==0))),2)
+
+table(training_data$class, pr_insample)
+```
+
+
+### Test - Bayesian - EXPERT
+```{r}
+preds_test <- posterior_predict(model_expert, newdata = test_data)
+pred_test <- colMeans(preds_test)
+```
+
+
+```{r}
+pr_test <- as.integer(pred_test >= 0.5)
+   
+# posterior classification accuracy
+round(mean(xor(pr_test,as.integer(test_data$class==0))),3)
+
+table(test_data$class, pr_test)
+```
+
+```{r}
+ltest <- test_data
+ltest$prediction <- pr_test
+```
+
+```{r}
+errs <- filter(ltest, class!=prediction)
+```
+
+```{r}
+head(filter(errs, errs$class==1))
+```
+
+
+## KAGGALE TEST WITH BAYESIAN EXPERT
+
+```{r}
+kaggle_test <- select(read_csv('../data/bankruptcy_Test_X.csv'), -ID)
+head(kaggle_test)
+```
+
+### Scale 
+```{r}
+for (i in 1:64) {
+      kaggle_test[i] <- scale(kaggle_test[i], center = TRUE, scale = TRUE)
+}
+```
+
+```{r}
+head(kaggle_test)
+```
+
+```{r}
+preds_test_kg <- posterior_predict(model_expert, newdata = kaggle_test)
+pred_test_kg <- colMeans(preds_test_kg)
+```
+
+```{r}
+pr_test_kg <- as.integer(pred_test_kg >= 0.6)
+```
+
+```{r}
+table(pr_test_kg)
+```
+
+
+```{r}
+library("tibble")
+```
+
+
+```{r}
+pr_test_kg <- as.integer(pred_test_kg >= 0.2)
+
+Y <- as_data_frame(pr_test_kg)
+colnames(Y) <- c("class")
+
+Y$ID <- seq.int(nrow(Y))
+head(Y)
+Y <- Y[, c("ID", "class")]
+write_csv(Y, '../data//bankruptcy_Test_Y.csv')
+
+```
+
+
+
+```{r}
+head(Y)
+```
+
+
+```{r}
+write_csv(Y, '../data//bankruptcy_Test_Y.csv')
+```
+
+```{r}
+as.data.frame(pr_test_kg)
+```
+
+```{r}
+hist(pred_test_kg)
+head(pred_test_kg)
+```
+
+```{r}
+hist(Y$class)
+```
+
+```{r}
+report(model_expert)
+```
+```{r}
+mcmc_areas(as.matrix(model_expert), prob_outer = .999)
+```
+
+
+
+
+## Habib Test
+
+```{r}
+htest <- evaluate_model(model = model_expert, data=test_data)
+```
+
+
+```{r}
+htest
+```
+## Expert : New Variables
+```{r}
+model_expert_2 <- stan_glm(class ~ Attr3 + Attr8 + Attr10 + Attr12 + Attr20 + Attr30 + Attr33 + Attr40 + Attr42 + Attr46 + Attr49 + Attr59 + Attr60 + Attr63 + Attr64, family = binomial(link = "logit"), data = training_data, prior = t_prior, prior_intercept = t_prior, QR=TRUE,cores=4,
+                 seed = 42) 
+```
+
+
+
+
+
+```{r}
+summary(model_expert_2)
+```
+
+
+```{r}
+preds_insample_2 <- posterior_linpred(model_expert_2, transform=TRUE)
+pred_insample_2 <- colMeans(preds_insample_2)
+```
+
+```{r}
+pr_insample_2 <- as.integer(pred_insample_2 >= 0.5)
+
+# posterior classification accuracy
+round(mean(xor(pr_insample_2,as.integer(training_data$class==0))),2)
+
+table(training_data$class, pr_insample_2)
+```
+
+
+### Test Expert 2
+
+```{r}
+preds_test_2 <- posterior_predict(model_expert_2, newdata = test_data)
+pred_test_2 <- colMeans(preds_test_2)
+```
+
+
+```{r}
+pr_test_2 <- as.integer(pred_test_2 >= 0.5)
+   
+# posterior classification accuracyx
+round(mean(xor(pr_test_2,as.integer(test_data$class==0))),3)
+
+table(test_data$class, pr_test_2)
+```
+
+```{r}
+ltest <- test_data
+ltest$prediction <- pr_test
+```
+
+```{r}
+errs <- filter(ltest, class!=prediction)
+```
+
+```{r}
+head(filter(errs, errs$class==1))
+```
+```{r}
+
+```
+
+
+
+
+## Model Only Attr 63
+
+```{r}
+model_attr63 <- stan_glm(class ~ Attr63, family = binomial(link = "logit"), data = training_data,
+                 prior = t_prior, prior_intercept = t_prior,cores=4,
+                 seed = 42)
+```
+
+### In-sample Validation Bayesian - Attr63
+
+
+```{r}
+in_sample_perf <- function(model, threshold = 0.5){
+  preds_insample <- posterior_linpred(model, transform=TRUE)
+  pred_insample <- colMeans(preds_insample)
+  pr_insample <- as.integer(pred_insample >= threshold)
+   
+  # posterior classification accuracy
+  accu <- round(mean(xor(pr_insample,as.integer(training_data$class==0))),2)
+  cat("\nAccuracy: ", accu)
+  cat("\n")
+  table(training_data$class, pr_insample)
+}
+
+```
+
+
+```{r}
+test_perf <- function (model, data, threshold = 0.5) {
+  preds_test <- posterior_predict(model, newdata = data)
+  pred_test <- colMeans(preds_test)
+  pr_test <- as.integer(pred_test >= 0.5)
+     
+  # posterior classification accuracy
+  accu <- round(mean(xor(pr_test,as.integer(test_data$class==0))),3)
+  cat("\nAccuracy: ", accu)
+  cat("\n")
+  
+  table(test_data$class, pr_test)
+}
+```
+
+```{r}
+in_sample_perf(model_attr63)
+```
+
+```{r}
+test_perf(model_attr63, test_data)
+```
+
+
+
+
+
+## Analylize Attr63
+
+```{r}
+model_expert <- read_rds("../model/model_expert.rds")
+describe_posterior(model_expert)
+```
+```{r}
+summary(model_expert)
+```
+

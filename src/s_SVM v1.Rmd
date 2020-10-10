@@ -47,7 +47,7 @@ library('e1071')
 
 
 ```{r}
-svm_model <- svm(class ~ ., data=training_data, type = 'C-classification')
+svm_model <- svm(class ~ ., data=training_data, type = 'C-classification', kernel = "radial")
 
 ```
 

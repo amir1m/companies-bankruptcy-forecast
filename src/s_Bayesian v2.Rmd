@@ -20,6 +20,10 @@ library(projpred)
 
 library(bayestestR)
 library("report")
+library("see")
+library("parameters")
+
+library("statisticalModeling")
 SEED=42
 set.seed(42)
 ```
@@ -107,6 +111,14 @@ model_expert <- stan_glm(class ~ Attr8 + Attr10 + Attr12 + Attr20 + Attr33 + Att
        
 ```
 
+### Save Bayesian Expert Model
+```{r}
+write_rds(model_expert, "../model/model_expert.rds")
+
+```
+```{r}
+```
+
 
 ```{r}
 summary(model_expert)
@@ -121,6 +133,93 @@ report(model_expert)
 ```{r}
 describe_posterior(model_expert)
 ```
+
+```{r}
+equivalence_test(model_expert)
+```
+```{r}
+p_direction(model_expert)
+```
+
+
+## SEE Visualization
+
+```{r}
+result_pd <- p_direction(model_expert)
+```
+
+```{r}
+print(result_pd)
+```
+```{r}
+plot(result_pd)
+```
+
+
+```{r}
+result <- estimate_density(model_expert)
+```
+
+```{r}
+plot(result)
+```
+```{r}
+plot(result, stack = FALSE)
+```
+
+```{r}
+plot(result, stack = FALSE, priors = TRUE)
+```
+
+
+```{r}
+result <- p_direction(model_expert, effects = "all", component = "all")
+result
+```
+
+
+```{r}
+plot(result, n_columns=NULL)
+```
+
+```{r}
+result <- p_significance(model_expert, effects = "all", component = "all")
+```
+
+```{r}
+plot(result)
+```
+
+### Point estimates
+```{r}
+result <- point_estimate(model_expert)
+plot(result)
+```
+```{r}
+result <- equivalence_test(model_expert)
+```
+
+
+```{r}
+plot(result) +
+  theme_blackboard() +
+  scale_fill_material()
+```
+
+
+
+```{r}
+result <- model_parameters(model_expert,  effects = "all", component = "all")
+
+plot(result)
+```
+
+
+```{r}
+corrplot(training_data)
+```
+
+
 
 ```{r}
 
@@ -141,6 +240,7 @@ lkfold_bayes_1 <- kfold(model_bayes_1, K = 10)
 ```{r}
 lkfold_expert <- kfold(model_expert, K = 10)
 ```
+
 ```{r}
 loo_compare(lkfold_bayes_1, lkfold_expert)
 ```
@@ -159,6 +259,8 @@ Overall : https://avehtari.github.io/modelselection/diabetes.html
 ```{r}
 lkfold_expert
 ```
+
+
 ```{r}
 lkfold_bayes_1
 kfol
@@ -269,8 +371,18 @@ table(test_data$class, pr_test)
 ```
 
 ```{r}
-32/47
+ltest <- test_data
+ltest$prediction <- pr_test
 ```
+
+```{r}
+errs <- filter(ltest, class!=prediction)
+```
+
+```{r}
+head(filter(errs, errs$class==1))
+```
+
 
 ## KAGGALE TEST WITH BAYESIAN EXPERT
 
@@ -351,5 +463,144 @@ report(model_expert)
 ```
 ```{r}
 mcmc_areas(as.matrix(model_expert), prob_outer = .999)
+```
+
+
+
+
+## Habib Test
+
+```{r}
+htest <- evaluate_model(model = model_expert, data=test_data)
+```
+
+
+```{r}
+htest
+```
+## Expert : New Variables
+```{r}
+model_expert_2 <- stan_glm(class ~ Attr3 + Attr8 + Attr10 + Attr12 + Attr20 + Attr30 + Attr33 + Attr40 + Attr42 + Attr46 + Attr49 + Attr59 + Attr60 + Attr63 + Attr64, family = binomial(link = "logit"), data = training_data, prior = t_prior, prior_intercept = t_prior, QR=TRUE,cores=4,
+                 seed = 42) 
+```
+
+
+
+
+
+```{r}
+summary(model_expert_2)
+```
+
+
+```{r}
+preds_insample_2 <- posterior_linpred(model_expert_2, transform=TRUE)
+pred_insample_2 <- colMeans(preds_insample_2)
+```
+
+```{r}
+pr_insample_2 <- as.integer(pred_insample_2 >= 0.5)
+
+# posterior classification accuracy
+round(mean(xor(pr_insample_2,as.integer(training_data$class==0))),2)
+
+table(training_data$class, pr_insample_2)
+```
+
+
+### Test Expert 2
+
+```{r}
+preds_test_2 <- posterior_predict(model_expert_2, newdata = test_data)
+pred_test_2 <- colMeans(preds_test_2)
+```
+
+
+```{r}
+pr_test_2 <- as.integer(pred_test_2 >= 0.5)
+   
+# posterior classification accuracyx
+round(mean(xor(pr_test_2,as.integer(test_data$class==0))),3)
+
+table(test_data$class, pr_test_2)
+```
+
+```{r}
+ltest <- test_data
+ltest$prediction <- pr_test
+```
+
+```{r}
+errs <- filter(ltest, class!=prediction)
+```
+
+```{r}
+head(filter(errs, errs$class==1))
+```
+```{r}
+
+```
+
+
+
+
+## Model Only Attr 63
+
+```{r}
+model_attr63 <- stan_glm(class ~ Attr63, family = binomial(link = "logit"), data = training_data,
+                 prior = t_prior, prior_intercept = t_prior,cores=4,
+                 seed = 42)
+```
+
+### In-sample Validation Bayesian - Attr63
+
+
+```{r}
+in_sample_perf <- function(model, threshold = 0.5){
+  preds_insample <- posterior_linpred(model, transform=TRUE)
+  pred_insample <- colMeans(preds_insample)
+  pr_insample <- as.integer(pred_insample >= threshold)
+   
+  # posterior classification accuracy
+  accu <- round(mean(xor(pr_insample,as.integer(training_data$class==0))),2)
+  cat("\nAccuracy: ", accu)
+  cat("\n")
+  table(training_data$class, pr_insample)
+}
+
+```
+
+
+```{r}
+test_perf <- function (model, data, threshold = 0.5) {
+  preds_test <- posterior_predict(model, newdata = data)
+  pred_test <- colMeans(preds_test)
+  pr_test <- as.integer(pred_test >= 0.5)
+     
+  # posterior classification accuracy
+  accu <- round(mean(xor(pr_test,as.integer(test_data$class==0))),3)
+  cat("\nAccuracy: ", accu)
+  cat("\n")
+  
+  table(test_data$class, pr_test)
+}
+```
+
+```{r}
+in_sample_perf(model_attr63)
+```
+
+```{r}
+test_perf(model_attr63, test_data)
+```
+
+
+
+
+
+## Analylize Attr63
+
+```{r}
+describe_posterior(model_expert)
 ```
 
