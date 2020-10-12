@@ -340,21 +340,35 @@ table(test_data$class, pr_test_1)
 ### In-sample Validation Bayesian - EXPERT
 
 ```{r}
+model_expert <- read_rds("../model/model_expert.rds")
+```
+
+
+```{r}
 preds_insample <- posterior_linpred(model_expert, transform=TRUE)
 pred_insample <- colMeans(preds_insample)
 ```
 
 ```{r}
-pr_insample <- as.integer(pred_insample >= 0.1)
+pr_insample <- factor(as.integer(pred_insample >= 0.5),levels = c(0,1))
    
 # posterior classification accuracy
-round(mean(xor(pr_insample,as.integer(training_data$class==0))),2)
+#round(mean(xor(pr_insample,as.integer(training_data$class==0))),2)
 
 table(training_data$class, pr_insample)
+MLmetrics::Accuracy(y_pred = pr_insample, y_true = training_data$class)
+MLmetrics::Precision(training_data$class, pr_insample)
+MLmetrics::Recall(training_data$class, pr_insample)
+MLmetrics::F1_Score(training_data$class, pr_insample)
 ```
 
 
 ### Test - Bayesian - EXPERT
+
+
+
+
+
 ```{r}
 preds_test <- posterior_predict(model_expert, newdata = test_data)
 pred_test <- colMeans(preds_test)
@@ -365,9 +379,13 @@ pred_test <- colMeans(preds_test)
 pr_test <- as.integer(pred_test >= 0.5)
    
 # posterior classification accuracy
-round(mean(xor(pr_test,as.integer(test_data$class==0))),3)
+#round(mean(xor(pr_test,as.integer(test_data$class==0))),3)
 
 table(test_data$class, pr_test)
+MLmetrics::Accuracy(y_pred = pr_test, y_true = test_data$class)
+MLmetrics::Precision(test_data$class, pr_test)
+MLmetrics::Recall(test_data$class, pr_test)
+MLmetrics::F1_Score(test_data$class, pr_test)
 ```
 
 ```{r}

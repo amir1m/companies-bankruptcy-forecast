@@ -51,6 +51,60 @@ test_data <- select(read_csv('../data/bankruptcy_test_am.csv'), -X1)
 ```
 
 
+
+
+## Altman Z-score Function Without Scaling
+
+```{r}
+altman_score <- function(ldata){
+  X1 <- select(ldata, Attr3)
+  X2 <- select(ldata, Attr6)
+  X3 <- select(ldata, Attr7)
+  X4 <- select(ldata, Attr8)
+  X5 <- select(ldata, Attr9)
+  z_score <- 1.2 * X1 + 1.4 * X2 + 3.3 * X3 + 0.6 * X4 + X5
+  #z_score <- 0.012 * X1 + 0.014 * X2 + 0.033 * X3 + 0.006 * X4 + 0.999 * X5
+  return(z_score)
+}
+```
+
+## Predictive performance
+
+### In-sample Validation
+
+```{r}
+zscore_train <- altman_score(training_data)
+
+altman_predictions_train <- ifelse(zscore_train>2.99, 0, 1) # TODO Grey Zone
+
+table(training_data$class, altman_predictions_train)
+#Accuracy(y_pred = altman_predictions_train, y_true = training_data$class)
+MLmetrics::Accuracy(y_pred = altman_predictions_train, y_true = training_data$class)
+MLmetrics::Precision(training_data$class, altman_predictions_train)
+MLmetrics::Recall(training_data$class, altman_predictions_train)
+MLmetrics::F1_Score(training_data$class, altman_predictions_train)
+```
+
+
+### Test 
+
+```{r}
+zscore_test <- altman_score(test_data)
+
+altman_predictions_test <- ifelse(zscore_test > 2.99, 0, 1) # TODO Grey Zone
+
+table(test_data$class, altman_predictions_test)
+#Accuracy(y_pred = altman_predictions_test, y_true = test_data$class)
+
+MLmetrics::Accuracy(y_pred = altman_predictions_test, y_true = test_data$class)
+MLmetrics::Precision(test_data$class, altman_predictions_test)
+MLmetrics::Recall(test_data$class, altman_predictions_test)
+MLmetrics::F1_Score(test_data$class, altman_predictions_test)
+
+```
+
+
+
 ### Pre-process - factor and normalize data
 
 ```{r}

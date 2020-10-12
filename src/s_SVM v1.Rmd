@@ -40,7 +40,7 @@ head(test_data)
 
 
 
-## SVM Classify
+## SVM Classify -
 ```{r}
 library('e1071')
 ```
@@ -51,12 +51,31 @@ svm_model <- svm(class ~ ., data=training_data, type = 'C-classification', kerne
 
 ```
 
+
+```{r}
+predicted_train <- predict(svm_model, newdata=training_data[,-65])
+```
+
+
+```{r}
+table(training_data$class, predicted_train)
+MLmetrics::Accuracy(y_pred = predicted_train, y_true = training_data$class)
+MLmetrics::Precision(training_data$class, predicted_train)
+MLmetrics::Recall(training_data$class, predicted_train)
+MLmetrics::F1_Score(training_data$class, predicted_train)
+```
+
+
 ```{r}
 predicted <- predict(svm_model, newdata=test_data[,-65])
 ```
 
 ```{r}
-length(predicted)
+table(test_data$class, predicted)
+MLmetrics::Accuracy(y_pred = predicted, y_true = test_data$class)
+MLmetrics::Precision(test_data$class, predicted)
+MLmetrics::Recall(test_data$class, predicted)
+MLmetrics::F1_Score(test_data$class, predicted)
 ```
 
 
@@ -68,3 +87,9 @@ table(predicted)
 true_pr <- test_data$class
 table(true_pr, predicted)
 ```
+
+
+```{r}
+
+```
+
