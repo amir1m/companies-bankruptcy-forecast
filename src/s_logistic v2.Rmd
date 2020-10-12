@@ -49,12 +49,17 @@ logitMod <- glm(class ~ ., data=training_data, family=binomial(link="logit"))
 ### In sample validation
 
 ```{r}
-predicted <- predict(logitMod, test_data, type="response")
-predicted_scaled <- as.integer(predicted >= 0.5)
+predicted_in <- predict(logitMod, training_data, type="response")
+predicted_scaled_in <- as.integer(predicted_in >= 0.5)
 ```
 
 
 ```{r}
+table(training_data$class, predicted_scaled_in)
+MLmetrics::Accuracy(predicted_scaled_in, training_data$class)
+MLmetrics::Precision(training_data$class, predicted_scaled_in)
+MLmetrics::Recall(training_data$class, predicted_scaled_in)
+MLmetrics::F1_Score(training_data$class, predicted_scaled_in)
 ```
 
 ### Test validation
