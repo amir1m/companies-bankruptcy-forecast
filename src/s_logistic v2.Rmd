@@ -45,6 +45,19 @@ logitMod <- glm(class ~ ., data=training_data, family=binomial(link="logit"))
 
 ```
 
+
+### In sample validation
+
+```{r}
+predicted <- predict(logitMod, test_data, type="response")
+predicted_scaled <- as.integer(predicted >= 0.5)
+```
+
+
+```{r}
+```
+
+### Test validation
 ```{r}
 predicted <- predict(logitMod, test_data, type="response")
 ```
@@ -64,7 +77,46 @@ table(predicted_scaled)
 ```{r}
 true_pr <- test_data$class
 table(true_pr, predicted_scaled)
+
+MLmetrics::Accuracy(predicted_scaled, test_data$class)
+MLmetrics::Precision(test_data$class, predicted_scaled)
+MLmetrics::Recall(test_data$class, predicted_scaled)
+MLmetrics::F1_Score(test_data$class, predicted_scaled)
 ```
+
+
+
+
+
+## GLM With Expert
+```{r}
+logitMod_expert <- glm(class ~ Attr8 + Attr10 + Attr12 + Attr20 + Attr33 + Attr40 + Attr42 + Attr46 + Attr49 + Attr59 + Attr63 + Attr64, data=training_data, family=binomial(link="logit"))
+```
+
+```{r}
+predicted_expert <- predict(logitMod_expert, test_data, type="response")
+```
+
+```{r}
+length(predicted_expert)
+```
+
+```{r}
+predicted_scaled_expert <- as.integer(predicted_expert >= 0.5)
+````
+
+
+```{r}
+
+table(test_data$class, predicted_scaled_expert)
+MLmetrics::Accuracy(predicted_scaled_expert, test_data$class)
+MLmetrics::Precision(test_data$class, predicted_scaled_expert)
+MLmetrics::Recall(test_data$class, predicted_scaled_expert)
+MLmetrics::F1_Score(test_data$class, predicted_scaled_expert)
+```
+
+
+
 
 ## Hypothesis testing
 ```{r}
