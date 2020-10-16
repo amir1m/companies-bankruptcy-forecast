@@ -1,6 +1,14 @@
 # companies-bankruptcy-forecast
 ## Todo list / Plan
 
+* Combine  Surrogate and Bayesian GLM for interpretability:
+ - Combine Surrogtae Decision Tree with pd/ROPE
+ - https://cran.r-project.org/web/packages/iml/vignettes/intro.html
+ 
+* Use XGBOOST and GBM
+* Expand using other Credit default data
+
+
 - [ ] Fit Bayesain regression with all variables : Student-t prior and defaults
     - [x] [Use Bayes Rqaured metric] (https://avehtari.github.io/ROS-Examples/Rsquared/rsquared.html) to test the goodness fit
     - [ ] Change the variables

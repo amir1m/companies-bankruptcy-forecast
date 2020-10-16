@@ -1,8 +1,10 @@
 ---
 title: "R Notebook"
-output: html_notebook
-pdf_document:
-    keep_tex: true
+output:
+  html_document:
+    df_print: paged
+  pdf_document:
+    latex_engine: xelatex
 ---
 
 ```{r}
@@ -62,10 +64,6 @@ dim(test_data)
 table(training_data$class)
 ```
 
-
-```{r}
-corrplot(cor(training_data[, c(65,1:64)]))
-```
 
 
 ## Build rstanarm model with selected variables RPART
@@ -215,10 +213,6 @@ plot(result)
 ```
 
 
-```{r}
-corrplot(training_data)
-```
-
 
 
 ```{r}
@@ -326,6 +320,7 @@ table(training_data$class, pr_insample_1)
 preds_test_1 <- posterior_predict(model_bayes_1, newdata = test_data)
 pred_test_1 <- colMeans(preds_test_1)
 ```
+
 
 
 ```{r}
@@ -620,5 +615,17 @@ test_perf(model_attr63, test_data)
 
 ```{r}
 describe_posterior(model_expert)
+```
+
+```{r}
+
+plot(model_expert)
+```
+```{r}
+library(rstan)
+```
+
+```{r}
+plot(model_expert, "trace", pars="(Intercept)")
 ```
 
