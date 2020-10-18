@@ -3,9 +3,12 @@ title: "R Notebook"
 output: html_notebook
 ---
 
+- Adding Shapley values - didn't work for GLM 10/17
+
 ```{r}
 library(dplyr)
 library(tidyverse)
+library("fastshap")
 set.seed(42)
 ```
 
@@ -40,6 +43,8 @@ head(test_data)
 
 
 
+
+## All variables
 ```{r}
 logitMod <- glm(class ~ ., data=training_data, family=binomial(link="logit"))
 
@@ -151,6 +156,7 @@ report(logitMod)
 ```
 
 
+
 ## Use of Evaluate_Model and other facelts from statisticalModeling package
 ```{r}
 library(statisticalModeling)
@@ -184,4 +190,14 @@ table(eval_pred$model_output, eval_pred$true_class)
 evaluate_model(logitMod)
 ```
 
+
+
+
+## Interpretable ML - All models
+### Shapley
+
+```{r}
+shap <- explain(logitMod, X = data.frame(subset(training_data, select = -class)), nsim = 10, pred_wrapper = predict)
+shap
+```
 

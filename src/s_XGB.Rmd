@@ -1,0 +1,165 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+```{r}
+library(dplyr)
+library(tidyverse)
+library("xgboost")
+set.seed(42)
+```
+
+
+```{r}
+training_data <- select(read_csv('../data/bankruptcy_train_am.csv'), -X1)
+test_data <- select(read_csv('../data/bankruptcy_test_am.csv'), -X1)
+```
+
+```{r}
+head(training_data)
+```
+
+```{r}
+head(test_data)
+```
+
+
+### Pre-process - factor and scale data
+
+
+
+```{r}
+#Factor not needed for XGBOOST
+#training_data$class <- factor(training_data$class, levels = c(0,1))
+#test_data$class <- factor(test_data$class, levels = c(0,1))
+```
+
+
+```{r}
+head(training_data)
+head(test_data)
+```
+
+## XGBOOST Decision Trees
+```{r}
+dtrain <- xgb.DMatrix(label = training_data$class, data = as.matrix(select(training_data, -class)))
+
+```
+
+```{r}
+
+```
+
+
+```{r}
+bst <- xgboost(data = dtrain, max.depth = 12, eta = 1, nthread = 2, nrounds = 12, objective = "binary:logistic")
+
+```
+
+
+### In-sample validation - BST  Decision Trees
+
+```{r}
+pred_ins <- predict(bst,dtrain)
+```
+
+```{r}
+pr_insample <-as.numeric(pred_ins > 0.5)
+
+   
+# posterior classification accuracy
+#round(mean(xor(pr_insample,as.integer(training_data$class==0))),2)
+
+table(training_data$class, pr_insample)
+MLmetrics::Accuracy(y_pred = pr_insample, y_true = training_data$class)
+MLmetrics::Precision(training_data$class, pr_insample)
+MLmetrics::Recall(training_data$class, pr_insample)
+MLmetrics::F1_Score(training_data$class, pr_insample)
+```
+
+
+### Test - XGB Decision Trees
+
+```{r}
+dtest <- xgb.DMatrix(label = test_data$class, data = as.matrix(select(test_data, -class)))
+```
+
+
+```{r}
+pred_test <- predict(bst,dtest)
+```
+
+
+```{r}
+pr_test <- as.numeric(pred_test >= 0.5)
+   
+# posterior classification accuracy
+#round(mean(xor(pr_test,as.integer(test_data$class==0))),3)
+
+table(test_data$class, pr_test)
+MLmetrics::Accuracy(y_pred = pr_test, y_true = test_data$class)
+MLmetrics::Precision(test_data$class, pr_test)
+MLmetrics::Recall(test_data$class, pr_test)
+MLmetrics::F1_Score(test_data$class, pr_test)
+```
+
+
+
+## XGB - Linear
+
+```{r}
+bst_linear <- xgb.train(data=dtrain, booster = "gblinear", nthread = 2, nrounds=12, eval.metric = "error", eval.metric = "logloss", objective = "binary:logistic", verbose = 2)
+
+```
+
+
+
+```{r}
+pred_ins_linear <- predict(bst_linear,dtrain)
+```
+
+```{r}
+pr_insample_linear <-as.numeric(pred_ins_linear > 0.5)
+
+   
+# posterior classification accuracy
+#round(mean(xor(pr_insample,as.integer(training_data$class==0))),2)
+
+table(training_data$class, pr_insample_linear)
+MLmetrics::Accuracy(y_pred = pr_insample_linear, y_true = training_data$class)
+MLmetrics::Precision(training_data$class, pr_insample_linear)
+MLmetrics::Recall(training_data$class, pr_insample_linear)
+MLmetrics::F1_Score(training_data$class, pr_insample_linear)
+```
+
+
+### Test - XGB Linear
+
+```{r}
+dtest <- xgb.DMatrix(label = test_data$class, data = as.matrix(select(test_data, -class)))
+```
+
+
+```{r}
+pred_test_linear <- predict(bst_linear,dtest)
+```
+
+
+```{r}
+pr_test <- as.numeric(pred_test_linear >= 0.5)
+   
+# posterior classification accuracy
+#round(mean(xor(pr_test,as.integer(test_data$class==0))),3)
+
+table(test_data$class, pr_test)
+MLmetrics::Accuracy(y_pred = pr_test, y_true = test_data$class)
+MLmetrics::Precision(test_data$class, pr_test)
+MLmetrics::Recall(test_data$class, pr_test)
+MLmetrics::F1_Score(test_data$class, pr_test)
+```
+
+
+
+

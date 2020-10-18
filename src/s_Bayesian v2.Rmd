@@ -397,6 +397,8 @@ head(filter(errs, errs$class==1))
 ```
 
 
+
+
 ## KAGGALE TEST WITH BAYESIAN EXPERT
 
 ```{r}
@@ -628,4 +630,6 @@ library(rstan)
 ```{r}
 plot(model_expert, "trace", pars="(Intercept)")
 ```
+
+
 
